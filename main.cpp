@@ -1,4 +1,5 @@
 #include "headers/rocket.h"
+#include "headers/graphs.h"
 #include <cstdio>
 #include <iostream>
 #include "raylib.h"
@@ -77,6 +78,16 @@ int main() {
 	
 	World my_world{0.15f, 600, 580};
 
+	LineChart chart1{
+		10, 90,
+		200, 200,
+		"Demo Chart",
+
+		-1, -1, 11, 11,
+
+		true, true, 2.0f, 2.0f, 0.0f, 0.0f
+	};
+
 	SetTargetFPS(100);
 
 	while(!WindowShouldClose()) {
@@ -91,6 +102,8 @@ int main() {
 
 			// if(frameCount == 1)
 			ClearBackground(BLACK);
+
+			initializeLineChart(chart1);
 
 			drawRocket(my_world, my_rocket);
 
