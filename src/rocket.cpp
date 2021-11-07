@@ -55,10 +55,22 @@ float Rocket::inertia() {
 	return mass() * _inertia_multiplier;
 }
 
+float clip(float a, float b, float c){
+	return a < c ? ((a > b) ? a : b) : c;
+}
+
+void Rocket::control(float dt) {
+	float vel_err = vel_x + clip(PID::get(position_controler, pos_x, dt), -25.0f, 25.0f);
+	float theta_err = theta + clip(PID::get(velocity_controler, vel_err, dt), -0.2f, 0.2f);
+	thruster_theta = clip(PID::get(attitude_controler, theta_err, dt), -0.2f, 0.2f);
+}
+
 void Rocket::update(float dt) {
-	if (fuel < burn_through_rate * throttle * dt && fuel > 0.0f)
-		throttle = fuel / burn_through_rate;
-	if (fuel <= 0.0f)
+	control(dt);
+
+	// if (fuel < burn_through_rate * throttle * dt && fuel > 0.0f)
+	// 	throttle = fuel / burn_through_rate;
+	if (fuel <= 0.05f)
 		throttle = 0.0f;
 
 	fuel -= throttle * burn_through_rate * dt;

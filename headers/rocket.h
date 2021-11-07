@@ -1,3 +1,5 @@
+#include "control.h"
+
 class Rocket {
 	public:
 		float pos_x;				// position
@@ -23,6 +25,10 @@ class Rocket {
 		float burn_through_rate;	// fuel bur through rate in liters per second
 		float throttle = 0.0f;		// current throttle level (0.0f to 1.0f)
 
+		PID::PID attitude_controler{0.25f, 0.05f, 0.1f};
+		PID::PID velocity_controler{4.0f, 0.15f, 0.5f};
+		PID::PID position_controler{16.0f, 2.5f, 0.5f};
+
 	private:
 		// Function specific varialbes (super private)
 		float _inertia_multiplier = -1.0f;
@@ -31,6 +37,7 @@ class Rocket {
 		// Updating
 		float inertia();
 		float mass();
+		void control(float dt);
 
 	public:
 		Rocket();
