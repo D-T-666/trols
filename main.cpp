@@ -1,3 +1,4 @@
+#include "headers/raylib-utils.h"
 #include "headers/rocket.h"
 #include "headers/graphs.h"
 #include <cstdio>
@@ -10,6 +11,8 @@ struct World{
 	float scale;
 	int x0;
 	int y0;
+	int pos_x, pos_y;
+	int w, h;
 };
 
 void drawPoly(int* xs, int* ys, int n, Color color) {
@@ -17,14 +20,17 @@ void drawPoly(int* xs, int* ys, int n, Color color) {
 		DrawLine(xs[i], ys[i], xs[(i+1)%n], ys[(i+1)%n], color);
 }
 
-void drawGround(World wld, int width, Color color) {
-	DrawLine(0, wld.y0, width, wld.y0, color);
+void drawPolyBounded(int* xs, int* ys, int n, World wld, Color color) {
+	for (int i = 0; i < n; i++)
+		drawLineBounded(xs[i], ys[i], xs[(i+1)%n], ys[(i+1)%n], wld.pos_x, wld.pos_y, wld.w, wld.h, color);
 }
 
-void drawRocket(World wld, Rocket rkt) {
+void drawWorld(World wld, Rocket rkt) {
+	DrawRectangle(wld.pos_x, wld.pos_y, wld.w, wld.h, BLACK);
+	DrawRectangleLines(wld.pos_x-1, wld.pos_y-1, wld.w+2, wld.h+2, WHITE);
 	float pos[2] = {
-		wld.x0 + rkt.pos_x/wld.scale,
-		wld.y0 - rkt.pos_y/wld.scale
+		wld.pos_x + wld.x0 + rkt.pos_x/wld.scale,
+		wld.pos_y + wld.y0 - rkt.pos_y/wld.scale
 	};
 	
 	float up[2] = {
@@ -51,14 +57,15 @@ void drawRocket(World wld, Rocket rkt) {
 		static_cast<int>(pos[1] - right[1] + up[1])
 	};
 
-	drawPoly(xs, ys, 4, WHITE);
+	drawPolyBounded(xs, ys, 4, wld, WHITE);
 
 	float th_x = rkt.thruster_pos_y / wld.scale *  sin(rkt.theta) + rkt.thruster_pos_x / wld.scale * cos(rkt.theta);
 	float th_y = rkt.thruster_pos_y / wld.scale * -cos(rkt.theta) + rkt.thruster_pos_x / wld.scale * sin(rkt.theta);
 
 	float th_to_x = -sin(rkt.thruster_theta + rkt.theta) * rkt.height * rkt.throttle / wld.scale;
 	float th_to_y =  cos(rkt.thruster_theta + rkt.theta) * rkt.height * rkt.throttle / wld.scale;
-	DrawLine(pos[0] + th_x, pos[1] + th_y, pos[0] + th_x + th_to_x, pos[1] + th_y + th_to_y, RED);
+	drawLineBounded(pos[0] + th_x, pos[1] + th_y, pos[0] + th_x + th_to_x, pos[1] + th_y + th_to_y, wld.pos_x, wld.pos_y, wld.w, wld.h, RED);
+	DrawLine(wld.pos_x, wld.pos_y+wld.y0, wld.pos_x+wld.w, wld.pos_y+wld.y0, GREEN);
 }
 
 int main() {
@@ -76,14 +83,14 @@ int main() {
 	my_rocket.burn_through_rate = 0.5f;
 	my_rocket.set_pos(0, 50);
 	
-	World my_world{0.15f, 600, 580};
+	World my_world{0.15f, 200, 350, 500, 100, 400, 400};
 
-	LineChart chart1{
-		10, 90,
+	chart::Line chart1{
+		10, 110,
 		200, 200,
 		"Demo Chart",
 
-		-1, -1, 11, 11,
+		-1, -1, 11, 51,
 
 		true, true, 2.0f, 2.0f, 0.0f, 0.0f
 	};
@@ -100,14 +107,17 @@ int main() {
 
 		BeginDrawing();
 
-			// if(frameCount == 1)
-			ClearBackground(BLACK);
+			if(frameCount == 1) {
+				ClearBackground(BLACK);
 
-			initializeLineChart(chart1);
+				initializeLineChart(chart1);
+			}
 
-			drawRocket(my_world, my_rocket);
+			DrawRectangle(0, 0, 400, 90, BLACK);
 
-			drawGround(my_world, screenWidth, GREEN);
+			plotLineChart(chart1, new float[2]{time, time}, new float[2]{my_rocket.pos_y, -my_rocket.vel_y}, 2);
+
+			drawWorld(my_world, my_rocket);
 
 			DrawText(TextFormat("y pos: %f", my_rocket.pos_y), 10, 10, 20, WHITE);
 			DrawText(TextFormat("x pos: %f", my_rocket.pos_x), 10, 30, 20, WHITE);
@@ -115,6 +125,8 @@ int main() {
 			DrawText("fuel: ", 10, 70, 20, WHITE);
 			DrawRectangle(60, 75, 100.0f*my_rocket.fuel, 10, BLUE);
 			DrawRectangleLines(59, 74, 102, 12, WHITE);
+
+			// DrawFPS(10, 10);
 
 		EndDrawing();
 	}
