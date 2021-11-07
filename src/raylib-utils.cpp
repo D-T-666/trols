@@ -1,80 +1,61 @@
 #include "raylib.h"
 #include "math.h"
 
+
+int get_out_code(int x, int y, int x_min, int y_min, int x_max, int y_max) {
+	int code = 0;
+	if (x < x_min)           // to the left of clip window
+		code |= 1;
+	else if (x > x_max)      // to the right of clip window
+		code |= 2;
+	if (y < y_min)           // below the clip window
+		code |= 4;
+	else if (y > y_max)      // above the clip window
+		code |= 8;
+	return code;
+}
+
 void drawLineBounded(int x1, int y1, int x2, int y2, int x_min, int y_min, int w, int h, Color color) {
-	if (!(x2-x1)) { // Vertical line
-		if (x1 - x_min < w && x1 - x_min >= 0 && !((y1 < y_min || y1 > y_min + h) && (y2 < y_min || y2 > y_min + h))) {
-			int _y1 = y1 < y2 ? y1 : y2;
-			int _y2 = y1 > y2 ? y1 : y2;
+	int x_max = x_min + w;
+	int y_max = y_min + h;
+	
+	int out_code_1 = get_out_code(x1, y1, x_min, y_min, x_max, y_max);
+	int out_code_2 = get_out_code(x2, y2, x_min, y_min, x_max, y_max);
 
-			_y1 = _y1 > y_min ? _y1 : y_min;
-			_y2 = _y2 < (y_min + h) ? _y2 : y_min + h;
+	while (true) {
+		if (!(out_code_1 | out_code_2)) {
+			DrawLine(x1, y1, x2, y2, color);
+			break;
+		} else if (out_code_1 & out_code_2) {
+			break;
+		} else {
+			int out_code_out = out_code_1 > out_code_2 ? out_code_1 : out_code_2;
 
-			DrawLine(x1, _y1, x1, _y2, color);
-		}
-	} else { // Non-vertical line
-		float k = float(y2-y1) / float(x2-x1);
-		float b = float(y1)-k*float(x1);
+			int x, y;
 
-		int x_max = x_min + w;
-		int y_max = y_min + h;
-
-		DrawLine(0, y_min, 10000, y_min, RED);
-		DrawLine(0, y_max, 10000, y_max, RED);
-		DrawLine(x_min, 0, x_min, 10000, RED);
-		DrawLine(x_max, 0, x_max, 10000, RED);
-
-		bool intersects = false;
-
-		float i1 = (float(y_min)-(float(h)/float(w))*x_min-b) / (k - (float(h)/float(w)));
-		float i2 = (float(y_max)-(-float(h)/float(w))*x_min-b) / (k - (-float(h)/float(w)));
-
-		if (x_min < i1 && i1 < x_max) intersects = true;
-		if (x_min < i2 && i2 < x_max) intersects = true;
-
-		if (intersects) {
-			int x_min_x = x_min,
-				x_min_y = float(x_min) * k + b,
-				x_max_x = x_max,
-				x_max_y = float(x_max) * k + b,
-				y_min_x = (abs(k) > 0.0001f) ? float(y_min) / k - b / k : 0,
-				y_min_y = y_min,
-				y_max_x = (abs(k) > 0.0001f) ? float(y_max) / k - b / k : w,
-				y_max_y = y_max;
-
-			int _x1 = x1,
-				_y1 = y1,
-				_x2 = x2,
-				_y2 = y2;
-
-			if (x_min_x > _x1 && x_min_x < _x2) {
-				_x1 = x_min_x;
-				_y1 = x_min_y;
-			}
-			if (x_max_x > _x1 && x_max_x < _x2) {
-				_x2 = x_max_x;
-				_y2 = x_max_y;
-			}
-			if (y_min_x > _x1 && y_min_x < _x2) {
-				if (k > 0) {
-					_x1 = y_min_x;
-					_y1 = y_min_y;
-				} else {
-					_x2 = y_min_x;
-					_y2 = y_min_y;
-				}
-			}
-			if (y_max_x > _x1 && y_max_x < _x2) {
-				if (k > 0) {
-					_x2 = y_max_x;
-					_y2 = y_max_y;
-				} else {
-					_x1 = y_max_x;
-					_y1 = y_max_y;
-				}
+			if (out_code_out & 8) {			// point is above the clip window
+				x = x1 + (x2 - x1) * (y_max - y1) / (y2 - y1);
+				y = y_max;
+			} else if (out_code_out & 4) {	// point is below the clip window
+				x = x1 + (x2 - x1) * (y_min - y1) / (y2 - y1);
+				y = y_min;
+			} else if (out_code_out & 2) {	// point is to the right of clip window
+				y = y1 + (y2 - y1) * (x_max - x1) / (x2 - x1);
+				x = x_max;
+			} else if (out_code_out & 1) {	// point is to the left of clip window
+				y = y1 + (y2 - y1) * (x_min - x1) / (x2 - x1);
+				x = x_min;
 			}
 
-			DrawLine(_x1, _y1, _x2, _y2, color);
+			if (out_code_out == out_code_1) {
+				x1 = x;
+				y1 = y;
+				out_code_1 = get_out_code(x1, y1, x_min, y_min, x_max, y_max);
+			} else {
+				x2 = x;
+				y2 = y;
+				out_code_2 = get_out_code(x2, y2, x_min, y_min, x_max, y_max);
+			}
 		}
 	}
 }
