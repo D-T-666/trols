@@ -5,8 +5,10 @@
 - [x] simple newtonian physics
 - [x] real time visualization
 - [ ] graphing data
+  - [x] static, unupdatable graphs
+  - [ ] dynamic, updatable and hidable graphs
 - [ ] attitude control system
-  - [ ] PID
+  - [x] PID
   - [ ] state machine
 - [ ] predicting future
   - [ ] visualizing predictions
