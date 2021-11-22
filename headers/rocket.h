@@ -25,9 +25,9 @@ class Rocket {
 		float burn_through_rate;	// fuel bur through rate in liters per second
 		float throttle = 0.0f;		// current throttle level (0.0f to 1.0f)
 
-		PID::PID attitude_controler{0.25f, 0.05f, 0.1f};
-		PID::PID velocity_controler{4.0f, 0.15f, 0.5f};
-		PID::PID position_controler{16.0f, 2.5f, 0.5f};
+		PID::PID attitude_controler{1.5f, 0.05f, 4.5f};
+		PID::PID position_controler{0.0f, 0.0f, 0.0f};
+		PID::PID throttle_controler{0.5f, 0.1f, 3.5f};
 
 	private:
 		// Function specific varialbes (super private)
@@ -44,12 +44,6 @@ class Rocket {
 		// Getters and setters
 		void set_pos(float x, float y);
 		void set_vel(float x, float y);
-		float* get_pos();
-		float* get_vel();
-		void set_theta(float a);
-		void set_theta_vel(float a);
-		float get_theta();
-		float get_theta_vel();
 		void set_thruster(float tpx, float tpy, float tt);
 		void set_dimensions(float w, float h, float dm, float wm, float f);
 		// Updating

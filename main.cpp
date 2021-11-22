@@ -4,7 +4,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
-#include "raylib.h"
+#include <raylib.h>
+// #include <raygui.h>
 #include <math.h>
 #include <string>
 
@@ -63,6 +64,7 @@ void drawWorld(World wld, Rocket rkt, bool clear = true) {
 	float th_x = rkt.thruster_pos_y / wld.scale *  sin(rkt.theta) + rkt.thruster_pos_x / wld.scale * cos(rkt.theta);
 	float th_y = rkt.thruster_pos_y / wld.scale * -cos(rkt.theta) + rkt.thruster_pos_x / wld.scale * sin(rkt.theta);
 
+	std::cout << rkt.throttle << "\n";
 	float th_to_x = -sin(rkt.thruster_theta + rkt.theta) * rkt.height * rkt.throttle / wld.scale;
 	float th_to_y =  cos(rkt.thruster_theta + rkt.theta) * rkt.height * rkt.throttle / wld.scale;
 	drawLineBounded(pos[0] + th_x, pos[1] + th_y, pos[0] + th_x + th_to_x, pos[1] + th_y + th_to_y, wld.pos_x, wld.pos_y, wld.w, wld.h, RED);
@@ -78,15 +80,13 @@ int main() {
 	int frameCount = 0;
 	float time = 0.0f;
 
-	int total_rockets = 10;
-	Rocket my_rocket[total_rockets];
-	for (int i = 0; i < total_rockets; i++) {
-		my_rocket[i].set_dimensions(2, 8, 90, 100, 2300);
-		my_rocket[i].thruster_theta = 0.0f;
-		my_rocket[i].burn_through_rate = 0.25f;
-		my_rocket[i].set_pos(0, 200);
-		my_rocket[i].theta = 0.5f + float(rand()%100) / 100.0f;
-	}
+	Rocket my_rocket;
+	my_rocket.set_dimensions(2, 8, 90, 100, 2300);
+	my_rocket.set_thruster(0, -4, 0.0f);
+	my_rocket.thruster_theta = 0.0f;
+	my_rocket.burn_through_rate = 0.025f;
+	my_rocket.set_pos(0, 200);
+	my_rocket.theta = 1.0f;
 	
 	World my_world{0.5f, 290, 560, 310, 10, 580, 580};
 
@@ -105,19 +105,19 @@ int main() {
 	chart::Line chart_pid_attitude;
 	chart::set_screen(chart_pid_attitude, 900, 30, 290, 165);
 	chart::set_title(chart_pid_attitude, "pid - attitude");
-	chart::set_params(chart_pid_attitude, -1.0f, -5.0f, 21.0f, 5.0f);
+	chart::set_params(chart_pid_attitude, -1.0f, -1.0f, 21.0f, 1.0f);
 	chart::set_guides(chart_pid_attitude, 3, 2.0f, 5.0f, 0.0f, 0.0f);
 
-	chart::Line chart_pid_velocity;
-	chart::set_screen(chart_pid_velocity, 900, 230, 290, 165);
-	chart::set_title(chart_pid_velocity, "pid - velocity");
-	chart::set_params(chart_pid_velocity, -1.0f, -40.0f, 21.0f, 40.0f);
-	chart::set_guides(chart_pid_velocity, 3, 2.0f, 5.0f, 0.0f, 0.0f);
+	chart::Line chart_pid_throttle;
+	chart::set_screen(chart_pid_throttle, 900, 230, 290, 165);
+	chart::set_title(chart_pid_throttle, "pid - throttle");
+	chart::set_params(chart_pid_throttle, -1.0f, -100.0f, 21.0f, 100.0f);
+	chart::set_guides(chart_pid_throttle, 3, 2.0f, 5.0f, 0.0f, 0.0f);
 	
 	chart::Line chart_pid_position;
 	chart::set_screen(chart_pid_position, 900, 430, 290, 165);
-	chart::set_title(chart_pid_position, "pid - position");
-	chart::set_params(chart_pid_position, -1.0f, -60.0f, 21.0f, 60.0f);
+	chart::set_title(chart_pid_position, "pid - lateral");
+	chart::set_params(chart_pid_position, -1.0f, -10.0f, 21.0f, 10.0f);
 	chart::set_guides(chart_pid_position, 3, 2.0f, 5.0f, 0.0f, 0.0f);
 
 	SetTargetFPS(60);
@@ -125,10 +125,10 @@ int main() {
 	while(!WindowShouldClose()) {
 		frameCount++;
 
-		for(int i = 0; i < total_rockets; i++) my_rocket[i].update(GetFrameTime());
+		my_rocket.update(GetFrameTime());
 		time += GetFrameTime();
 
-		if(time > 2.f) for(int i = 0; i < total_rockets; i++) my_rocket[i].throttle = 1.0f;
+		// if(time > 2.f) my_rocket.throttle = 1.0f;
 
 		BeginDrawing();
 
@@ -138,7 +138,7 @@ int main() {
 				initializeLineChart(chart_position);
 				initializeLineChart(chart_velocity);
 				initializeLineChart(chart_pid_attitude);
-				initializeLineChart(chart_pid_velocity);
+				initializeLineChart(chart_pid_throttle);
 				initializeLineChart(chart_pid_position);
 			}
 
@@ -148,44 +148,42 @@ int main() {
 			plotLineChart(
 				chart_position,
 				new float[2]{time, time},
-				new float[2]{my_rocket[0].pos_x, my_rocket[0].pos_y-200},
+				new float[2]{my_rocket.pos_x, my_rocket.pos_y-200},
 				new Color[2]{{255, 80, 60, 255}, GREEN},
 				2);
 			plotLineChart(
 				chart_velocity,
 				new float[2]{time, time},
-				new float[2]{my_rocket[0].vel_x, my_rocket[0].vel_y},
+				new float[2]{my_rocket.vel_x, my_rocket.vel_y},
 				new Color[2]{{255, 80, 60, 255}, GREEN},
 				2);
 			plotLineChart(
 				chart_pid_attitude,
 				new float[3]{time, time, time},
-				new float[3]{my_rocket[0].attitude_controler.p, my_rocket[0].attitude_controler.i, my_rocket[0].attitude_controler.d},
+				new float[3]{my_rocket.attitude_controler.p, my_rocket.attitude_controler.i, my_rocket.attitude_controler.d},
 				new Color[3]{{255, 80, 60, 255}, GREEN, {60, 80, 255, 255}},
 				3);
 			plotLineChart(
-				chart_pid_velocity,
+				chart_pid_throttle,
 				new float[3]{time, time, time},
-				new float[3]{my_rocket[0].velocity_controler.p, my_rocket[0].velocity_controler.i, my_rocket[0].velocity_controler.d},
+				new float[3]{my_rocket.throttle_controler.p, my_rocket.throttle_controler.i, my_rocket.throttle_controler.d},
 				new Color[3]{{255, 80, 60, 255}, GREEN, {60, 80, 255, 255}},
 				3);
 			plotLineChart(
 				chart_pid_position,
 				new float[3]{time, time, time},
-				new float[3]{my_rocket[0].position_controler.p, my_rocket[0].position_controler.i, my_rocket[0].position_controler.d},
+				new float[3]{my_rocket.position_controler.p, my_rocket.position_controler.i, my_rocket.position_controler.d},
 				new Color[3]{{255, 80, 60, 255}, GREEN, {60, 80, 255, 255}},
 				3);
 
-			drawWorld(my_world, my_rocket[0]);
-			for(int i = 1; i < total_rockets; i++)
-				drawWorld(my_world, my_rocket[i], false);
+			drawWorld(my_world, my_rocket);
 
-			DrawFPS(10, 10);
-			// DrawText(TextFormat("y pos: %f", my_rocket.pos_y), 10, 10, 20,WHITE);
-			// DrawText(TextFormat("x pos: %f", my_rocket.pos_x), 10, 30, 20,WHITE);
-			// DrawText(TextFormat("y velocity: %f", my_rocket.vel_y), 10, 50, 20,WHITE);
+			// DrawFPS(10, 10);
+			DrawText(TextFormat("y pos: %f", my_rocket.pos_y), 10, 10, 20,WHITE);
+			DrawText(TextFormat("x pos: %f", my_rocket.pos_x), 10, 30, 20,WHITE);
+			DrawText(TextFormat("y velocity: %f", my_rocket.vel_y), 10, 50, 20,WHITE);
 			DrawText("fuel: ", 10, 70, 20,WHITE);
-			DrawRectangle(60, 75, 100.0f*my_rocket[0].fuel, 10, BLUE);
+			DrawRectangle(60, 75, 100.0f*my_rocket.fuel, 10, BLUE);
 			DrawRectangleLines(59, 74, 102, 12,WHITE);
 
 		EndDrawing();

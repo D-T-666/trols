@@ -1,5 +1,6 @@
 #include "../headers/rocket.h"
 #include <math.h>
+#include <iostream>
 
 Rocket::Rocket() {
   set_pos(0, 0);
@@ -19,28 +20,19 @@ void Rocket::set_vel(float x, float y) {
 	vel_y = y;
 }
 
-void Rocket::set_theta(float a) {
-	theta = a;
-}
-
-float Rocket::get_theta() {
-	return theta;
-}
-
-float Rocket::get_theta_vel() {
-	return theta_vel;
-}
-
 void Rocket::set_dimensions(float w, float h, float dm, float wm, float t) {
 	width = w;
 	height = h;
-	thruster_distance = -h/2.0f;
-	thruster_pos_y = -h/2.0f;
-	thruster_pos_x = 0.0f;
 	dry_mass = dm;
 	wet_mass = wm;
 	fuel_mass = wet_mass - dry_mass;
 	thrust = t;
+}
+
+void Rocket::set_thruster(float tpx, float tpy, float tt){
+	thruster_pos_y = tpy;
+	thruster_pos_x = tpx;
+	thruster_distance = sqrtf(tpx * tpx + tpy * tpy);
 }
 
 // Dynamics
@@ -60,9 +52,13 @@ float clip(float a, float b, float c){
 }
 
 void Rocket::control(float dt) {
-	float vel_err = vel_x + clip(PID::get(position_controler, pos_x, dt), -25.0f, 25.0f);
-	float theta_err = theta + clip(PID::get(velocity_controler, vel_err, dt), -0.2f, 0.2f);
-	thruster_theta = clip(PID::get(attitude_controler, theta_err, dt), -0.2f, 0.2f);
+	// position_controler.kp = dry_mass / (fuel+1.0f);
+	float vel_err	= clip(PID::get(position_controler, 50-pos_x, dt), -100.0f, 100.0f);
+	thruster_theta	= clip(PID::get(attitude_controler, theta+vel_x*0.1, dt), -0.05f, 0.05f);
+
+	float altitude_err = 62.0f - pos_y;
+	throttle = clip(PID::get(throttle_controler, altitude_err, dt), 0.0f, 1.0f);
+	if(throttle < 0.05) throttle = 0;
 }
 
 void Rocket::update(float dt) {
