@@ -1,5 +1,9 @@
 # TRoLS - tunable rocket landing simulation
 
+current version:
+
+![](https://cloud.dimitri.ge/trols/anim-0.1.0.gif)
+
 ## TODO:
 
 - [x] simple newtonian physics
