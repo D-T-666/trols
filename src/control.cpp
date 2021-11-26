@@ -1,4 +1,4 @@
-#include "../headers/control.h"
+#include "../include/control.h"
 
 float PID::get(PID &pid, float err, float dt) {
 	pid.p = pid.kp * err;

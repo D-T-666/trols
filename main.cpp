@@ -1,6 +1,6 @@
-#include "headers/raylib-utils.h"
-#include "headers/rocket.h"
-#include "headers/graphs.h"
+#include "include/raylib-utils.h"
+#include "include/rocket.hpp"
+#include "include/graphs.h"
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -27,7 +27,7 @@ void drawPolyBounded(int* xs, int* ys, int n, World wld, Color color) {
 		drawLineBounded(xs[i], ys[i], xs[(i+1)%n], ys[(i+1)%n], wld.pos_x, wld.pos_y, wld.w, wld.h, color);
 }
 
-void drawWorld(World wld, Rocket rkt, bool clear = true) {
+void drawWorld(World wld, Rocket::Rocket rkt, bool clear = true) {
 	if (clear) DrawRectangle(wld.pos_x, wld.pos_y, wld.w, wld.h, {22,22,22,255});
 	DrawRectangleLines(wld.pos_x-1, wld.pos_y-1, wld.w+2, wld.h+2,WHITE);
 	float pos[2] = {
@@ -64,10 +64,23 @@ void drawWorld(World wld, Rocket rkt, bool clear = true) {
 	float th_x = rkt.thruster_pos_y / wld.scale *  sin(rkt.theta) + rkt.thruster_pos_x / wld.scale * cos(rkt.theta);
 	float th_y = rkt.thruster_pos_y / wld.scale * -cos(rkt.theta) + rkt.thruster_pos_x / wld.scale * sin(rkt.theta);
 
-	std::cout << rkt.throttle << "\n";
 	float th_to_x = -sin(rkt.thruster_theta + rkt.theta) * rkt.height * rkt.throttle / wld.scale;
 	float th_to_y =  cos(rkt.thruster_theta + rkt.theta) * rkt.height * rkt.throttle / wld.scale;
 	drawLineBounded(pos[0] + th_x, pos[1] + th_y, pos[0] + th_x + th_to_x, pos[1] + th_y + th_to_y, wld.pos_x, wld.pos_y, wld.w, wld.h, RED);
+	
+	// Trajectory
+
+	for (int i = 0; i < rkt.traj_points - 1; i++) {
+		drawLineBounded(
+			wld.pos_x + wld.x0 + rkt.traj[i + 0][0] / wld.scale, 
+			wld.pos_y + wld.y0 - rkt.traj[i + 0][1] / wld.scale,
+			wld.pos_x + wld.x0 + rkt.traj[i + 1][0] / wld.scale, 
+			wld.pos_y + wld.y0 - rkt.traj[i + 1][1] / wld.scale,
+			wld.pos_x, wld.pos_y, wld.w, wld.h, {60, 220, 255, 180});
+	}
+
+	// 
+	
 	DrawLine(wld.pos_x, wld.pos_y+wld.y0, wld.pos_x+wld.w, wld.pos_y+wld.y0, GREEN);
 }
 
@@ -80,12 +93,13 @@ int main() {
 	int frameCount = 0;
 	float time = 0.0f;
 
-	Rocket my_rocket;
-	my_rocket.set_dimensions(2, 8, 90, 100, 2300);
-	my_rocket.set_thruster(0, -4, 0.0f);
+	Rocket::Rocket my_rocket;
+	Rocket::set_dimensions(my_rocket, 2, 8, 90, 100, 2300);
+	Rocket::set_thruster(my_rocket, 0, -4, 0.0f);
 	my_rocket.thruster_theta = 0.0f;
 	my_rocket.burn_through_rate = 0.025f;
-	my_rocket.set_pos(0, 200);
+	Rocket::set_pos(my_rocket, 0, 200);
+	Rocket::set_GNC(my_rocket, 30, 0.2);
 	my_rocket.theta = 1.0f;
 	
 	World my_world{0.5f, 290, 560, 310, 10, 580, 580};
@@ -104,29 +118,31 @@ int main() {
 
 	chart::Line chart_pid_attitude;
 	chart::set_screen(chart_pid_attitude, 900, 30, 290, 165);
-	chart::set_title(chart_pid_attitude, "pid - attitude");
-	chart::set_params(chart_pid_attitude, -1.0f, -1.0f, 21.0f, 1.0f);
+	chart::set_title(chart_pid_attitude, "attitude");
+	chart::set_params(chart_pid_attitude, -1.0f, -2.0f, 21.0f, 2.0f);
 	chart::set_guides(chart_pid_attitude, 3, 2.0f, 5.0f, 0.0f, 0.0f);
 
-	chart::Line chart_pid_throttle;
-	chart::set_screen(chart_pid_throttle, 900, 230, 290, 165);
-	chart::set_title(chart_pid_throttle, "pid - throttle");
-	chart::set_params(chart_pid_throttle, -1.0f, -100.0f, 21.0f, 100.0f);
-	chart::set_guides(chart_pid_throttle, 3, 2.0f, 5.0f, 0.0f, 0.0f);
+	chart::Line chart_cost;
+	chart::set_screen(chart_cost, 900, 230, 290, 165);
+	chart::set_title(chart_cost, "landing cost");
+	chart::set_params(chart_cost, -1.0f, -0.5f, 21.0f, 1.5f);
+	// chart::set_guides(chart_cost, 3, 2.0f, 5.0f, 0.0f, 0.0f);
 	
-	chart::Line chart_pid_position;
-	chart::set_screen(chart_pid_position, 900, 430, 290, 165);
-	chart::set_title(chart_pid_position, "pid - lateral");
-	chart::set_params(chart_pid_position, -1.0f, -10.0f, 21.0f, 10.0f);
-	chart::set_guides(chart_pid_position, 3, 2.0f, 5.0f, 0.0f, 0.0f);
+	chart::Line chart_throttle;
+	chart::set_screen(chart_throttle, 900, 430, 290, 165);
+	chart::set_title(chart_throttle, "throttle");
+	chart::set_params(chart_throttle, -1.0f, -0.1f, 21.0f, 1.1f);
+	chart::set_guides(chart_throttle, 3, 2.0f, 0.1f, 0.0f, 0.0f);
 
-	SetTargetFPS(60);
+	SetTargetFPS(25);
 
 	while(!WindowShouldClose()) {
 		frameCount++;
 
-		my_rocket.update(GetFrameTime());
-		time += GetFrameTime();
+		Rocket::update(my_rocket, 0.1);
+		Rocket::control(my_rocket, 0.1);
+		Rocket::foresee(my_rocket, 3);
+		time += 0.1;
 
 		// if(time > 2.f) my_rocket.throttle = 1.0f;
 
@@ -138,8 +154,8 @@ int main() {
 				initializeLineChart(chart_position);
 				initializeLineChart(chart_velocity);
 				initializeLineChart(chart_pid_attitude);
-				initializeLineChart(chart_pid_throttle);
-				initializeLineChart(chart_pid_position);
+				initializeLineChart(chart_cost);
+				initializeLineChart(chart_throttle);
 			}
 
 
@@ -159,22 +175,22 @@ int main() {
 				2);
 			plotLineChart(
 				chart_pid_attitude,
-				new float[3]{time, time, time},
-				new float[3]{my_rocket.attitude_controler.p, my_rocket.attitude_controler.i, my_rocket.attitude_controler.d},
-				new Color[3]{{255, 80, 60, 255}, GREEN, {60, 80, 255, 255}},
-				3);
+				new float[2]{time, time},
+				new float[2]{my_rocket.theta, my_rocket.thruster_theta*10},
+				new Color[2]{{255, 80, 60, 255}, GREEN},
+				2);
 			plotLineChart(
-				chart_pid_throttle,
-				new float[3]{time, time, time},
-				new float[3]{my_rocket.throttle_controler.p, my_rocket.throttle_controler.i, my_rocket.throttle_controler.d},
-				new Color[3]{{255, 80, 60, 255}, GREEN, {60, 80, 255, 255}},
-				3);
+				chart_cost,
+				new float[1]{time},
+				new float[1]{Rocket::landing_cost(my_rocket)},
+				new Color[1]{{60, 80, 255, 255}},
+				1);
 			plotLineChart(
-				chart_pid_position,
-				new float[3]{time, time, time},
-				new float[3]{my_rocket.position_controler.p, my_rocket.position_controler.i, my_rocket.position_controler.d},
-				new Color[3]{{255, 80, 60, 255}, GREEN, {60, 80, 255, 255}},
-				3);
+				chart_throttle,
+				new float[1]{time},
+				new float[1]{my_rocket.throttle},
+				new Color[1]{{255, 80, 60, 255}},
+				1);
 
 			drawWorld(my_world, my_rocket);
 
