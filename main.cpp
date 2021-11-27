@@ -70,13 +70,19 @@ void drawWorld(World wld, Rocket::Rocket rkt, bool clear = true) {
 	
 	// Trajectory
 
-	for (int i = 0; i < rkt.traj_points - 1; i++) {
+	for (int i = 0; i < rkt.traj_points; i++) {
 		drawLineBounded(
-			wld.pos_x + wld.x0 + rkt.traj[i + 0][0] / wld.scale, 
-			wld.pos_y + wld.y0 - rkt.traj[i + 0][1] / wld.scale,
-			wld.pos_x + wld.x0 + rkt.traj[i + 1][0] / wld.scale, 
-			wld.pos_y + wld.y0 - rkt.traj[i + 1][1] / wld.scale,
-			wld.pos_x, wld.pos_y, wld.w, wld.h, {60, 220, 255, 180});
+			wld.pos_x + wld.x0 + rkt.traj[i][0] / wld.scale - rkt.height * sin(rkt.traj[i][2]) / wld.scale / 2, 
+			wld.pos_y + wld.y0 - rkt.traj[i][1] / wld.scale - rkt.height * -cos(rkt.traj[i][2]) / wld.scale / 2,
+			wld.pos_x + wld.x0 + rkt.traj[i][0] / wld.scale + rkt.height * sin(rkt.traj[i][2]) / wld.scale / 2, 
+			wld.pos_y + wld.y0 - rkt.traj[i][1] / wld.scale + rkt.height * -cos(rkt.traj[i][2]) / wld.scale / 2,
+			wld.pos_x, wld.pos_y, wld.w, wld.h, {60, 220, 255, 40});
+		drawLineBounded(
+			wld.pos_x + wld.x0 + rkt.traj[i][0] / wld.scale - rkt.height * sin(rkt.traj[i][2]) / wld.scale / 2, 
+			wld.pos_y + wld.y0 - rkt.traj[i][1] / wld.scale - rkt.height * -cos(rkt.traj[i][2]) / wld.scale / 2,
+			wld.pos_x + wld.x0 + rkt.traj[i][0] / wld.scale - rkt.height * sin(rkt.traj[i][2]) / wld.scale / 2 + rkt.height * -sin(rkt.traj[i][2] + rkt.traj[i][3]) * rkt.traj[i][4] / wld.scale,
+			wld.pos_y + wld.y0 - rkt.traj[i][1] / wld.scale - rkt.height * -cos(rkt.traj[i][2]) / wld.scale / 2 + rkt.height * cos(rkt.traj[i][2] + rkt.traj[i][3]) * rkt.traj[i][4] / wld.scale,
+			wld.pos_x, wld.pos_y, wld.w, wld.h, {255, 110, 20, 40});
 	}
 
 	// 
@@ -98,9 +104,11 @@ int main() {
 	Rocket::set_thruster(my_rocket, 0, -4, 0.0f);
 	my_rocket.thruster_theta = 0.0f;
 	my_rocket.burn_through_rate = 0.025f;
-	Rocket::set_pos(my_rocket, 0, 200);
-	Rocket::set_GNC(my_rocket, 30, 0.2);
-	my_rocket.theta = 1.0f;
+	Rocket::set_pos(my_rocket, -50, 200);
+	// Rocket::set_vel(my_rocket, 0, -50);
+	Rocket::set_GNC(my_rocket, 25, 0.25);
+	my_rocket.theta = 0.0f;
+	// my_rocket.theta_vel = 2.f;
 	
 	World my_world{0.5f, 290, 560, 310, 10, 580, 580};
 
@@ -136,13 +144,19 @@ int main() {
 
 	SetTargetFPS(25);
 
+	float foresee_update_timer = 0;
+
 	while(!WindowShouldClose()) {
 		frameCount++;
 
-		Rocket::update(my_rocket, 0.1);
-		Rocket::control(my_rocket, 0.1);
-		Rocket::foresee(my_rocket, 3);
-		time += 0.1;
+		Rocket::update(my_rocket, 0.04);
+		Rocket::control(my_rocket, 0.04);
+		foresee_update_timer += 0.04f;
+		Rocket::foresee(my_rocket, 3, foresee_update_timer >= my_rocket.traj_timesteps);
+		if (foresee_update_timer >= my_rocket.traj_timesteps) {
+			foresee_update_timer = 0;
+		}
+		time += 0.04;
 
 		// if(time > 2.f) my_rocket.throttle = 1.0f;
 

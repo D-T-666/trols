@@ -2,6 +2,13 @@
 #include "math.h"
 
 
+float clip(float a, float b, float c){
+	return a < c ? ((a > b) ? a : b) : c;
+}
+float lerp(float a, float b, float t) {
+	return a+(b-a)*t;
+}
+
 int get_out_code(int x, int y, int x_min, int y_min, int x_max, int y_max) {
 	int code = 0;
 	if (x < x_min)           // to the left of clip window

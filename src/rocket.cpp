@@ -1,4 +1,5 @@
 #include "../include/rocket.hpp"
+#include "../include/raylib-utils.h"
 #include <math.h>
 #include <iostream>
 
@@ -41,13 +42,6 @@ float Rocket::inertia(Rocket &r) {
 	return mass(r) * r._inertia_multiplier;
 }
 
-float clip(float a, float b, float c){
-	return a < c ? ((a > b) ? a : b) : c;
-}
-float lerp(float a, float b, float t) {
-	return a+(b-a)*t;
-}
-
 // void Rocket::control(Rocket &r, float dt) {
 // 	// position_controler.kp = dry_mass / (fuel+1.0f);
 // 	r.thruster_theta	= clip(PID::get(r.attitude_controler, r.theta+r.vel_x*0.1f+r.pos_x*0.02f, dt), -0.05f, 0.05f);
@@ -57,7 +51,7 @@ float lerp(float a, float b, float t) {
 // }
 
 void Rocket::control(Rocket &r, float dt) {
-	r.thruster_theta = lerp(r.thruster_theta, r.traj_states[r.next_step][0], clip(dt*20.0f, 0.0f, 1.0f));
+	r.thruster_theta = lerp(r.thruster_theta, r.traj_states[r.next_step][0], clip(dt*10.0f, 0.0f, 1.0f));
 	r.throttle = lerp(r.throttle, r.traj_states[r.next_step][1], clip(dt*10.0f, 0.0f, 1.0f));
 }
 
@@ -93,4 +87,6 @@ void Rocket::update(Rocket &r, float dt) {
 	r.pos_y += (r.vel_y + dv_y) * dt;
 
 	r.theta += r.theta_vel * dt;
+	if (r.theta > 2*PI) r.theta -= 2*PI;
+	if (r.theta < 0) r.theta += 2*PI;
 }

@@ -1,6 +1,6 @@
 #include "raylib.h"
 #include "../include/raylib-utils.h"
-#include "../include/graphs.h"
+#include "../include/graphs.hpp"
 #include <iostream>
 
 void drawGridAxis(float min, float max, float freq, float off, int sw, int sh, int sx, int sy, bool horizontal) {

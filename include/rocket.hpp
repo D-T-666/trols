@@ -37,7 +37,7 @@ namespace Rocket {
 		float traj_timesteps = 1.0f;
 		float traj_states_total;
 		float traj_states[100][2];
-		float traj[100][2];
+		float traj[100][5];
 		int next_step;
 	};
 	
@@ -59,5 +59,5 @@ namespace Rocket {
 	// Metastats
 	float landing_cost(Rocket &r);
 	void predict(Rocket r, int &depth, int &index, float &best_cost, int &best_cost_idnex);
-	void foresee(Rocket &ro, int depth);
+	void foresee(Rocket &ro, int depth, bool viz = false);
 }
