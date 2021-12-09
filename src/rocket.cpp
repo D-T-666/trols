@@ -42,24 +42,34 @@ float Rocket::inertia(Rocket &r) {
 	return mass(r) * r._inertia_multiplier;
 }
 
-// void Rocket::control(Rocket &r, float dt) {
-// 	// position_controler.kp = dry_mass / (fuel+1.0f);
-// 	r.thruster_theta	= clip(PID::get(r.attitude_controler, r.theta+r.vel_x*0.1f+r.pos_x*0.02f, dt), -0.05f, 0.05f);
-
-// 	float altitude_err = 4.0f - r.pos_y;
-// 	r.throttle = lerp(r.throttle, clip(PID::get(r.throttle_controler, altitude_err, dt), 0.0f, 1.0f), dt*10.f);
-// }
-
 void Rocket::control(Rocket &r, float dt) {
-	r.thruster_theta = lerp(r.thruster_theta, r.traj_states[r.next_step][0], clip(dt*10.0f, 0.0f, 1.0f));
-	r.throttle = lerp(r.throttle, r.traj_states[r.next_step][1], clip(dt*10.0f, 0.0f, 1.0f));
+	float thruster_theta_per_second = 0.5f;
+	float throttle_per_second = 0.5f;
+
+	float th_d = throttle_per_second * dt * (1 - (r.next_step & 2));
+	float gm_d = thruster_theta_per_second * dt * (1 - (r.next_step & 1) * 2);
+
+	if (th_d * r.p_th_d < 0) th_d = 0;
+	if (gm_d * r.p_gm_d < 0) gm_d = 0;
+
+	r.thruster_theta = clip(r.thruster_theta + gm_d, -r.thruster_max_theta, r.thruster_max_theta);
+	r.throttle = clip(r.throttle + th_d, 0.0f, 1.0f);
+
+	r.p_th_d = th_d;
+	r.p_gm_d = gm_d;
 }
+
+// void Rocket::control(Rocket &r, float dt) {
+// 	r.thruster_theta = lerp(r.thruster_theta, r.thruster_max_theta * (1 - (r.next_step & 1) * 2), clip(dt*10.0f, 0.0f, 1.0f));
+// 	r.throttle = lerp(r.throttle, (r.next_step & 2) / 2, clip(dt*10.0f, 0.0f, 1.0f));
+// }
 
 void Rocket::update(Rocket &r, float dt) {
 	// if (fuel < burn_through_rate * throttle * dt && fuel > 0.0f)
 	// 	throttle = fuel / burn_through_rate;
 	if (r.fuel <= 0.05f)
 		r.throttle = 0.0f;
+
 
 	r.fuel -= r.throttle * r.burn_through_rate * dt;
 
@@ -87,6 +97,9 @@ void Rocket::update(Rocket &r, float dt) {
 	r.pos_y += (r.vel_y + dv_y) * dt;
 
 	r.theta += r.theta_vel * dt;
-	if (r.theta > 2*PI) r.theta -= 2*PI;
-	if (r.theta < 0) r.theta += 2*PI;
+	if (r.theta > PI) r.theta -= 2*PI;
+	if (r.theta < -PI) r.theta += 2*PI;
+
+	// if (r.theta_vel > PI) r.theta_vel -= 2*PI;
+	// if (r.theta_vel < -PI) r.theta_vel += 2*PI;
 }

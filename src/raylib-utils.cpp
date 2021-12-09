@@ -66,3 +66,13 @@ void drawLineBounded(int x1, int y1, int x2, int y2, int x_min, int y_min, int w
 		}
 	}
 }
+
+void drawPoly(int* xs, int* ys, int n, Color color) {
+	for (int i = 0; i < n; i++)
+		DrawLine(xs[i], ys[i], xs[(i+1)%n], ys[(i+1)%n], color);
+}
+
+void drawPolyBounded(int* xs, int* ys, int n, int x, int y, int w, int h, Color color) {
+	for (int i = 0; i < n; i++)
+		drawLineBounded(xs[i], ys[i], xs[(i+1)%n], ys[(i+1)%n], x, y, w, h, color);
+}

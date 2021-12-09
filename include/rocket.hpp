@@ -15,6 +15,8 @@ namespace Rocket {
 		float thruster_pos_y = 0.0f;// position of the thruster on the rocket
 		float thruster_distance=.0f;// distance from CG to thruster
 		float thruster_theta = 0.0f;// rotation of the thruster relative to the rocket
+		float p_gm_d = 0.0f; 		// previous gimball delta
+		float thruster_max_theta = 80.0 * 3.1415926 / 180.f;
 		float dry_mass = 0.0f;
 		float wet_mass = 0.0f;
 		float fuel_mass = 0.0f;
@@ -24,10 +26,7 @@ namespace Rocket {
 		float fuel = 1.0f;			// fuel amount in liters
 		float burn_through_rate;	// fuel bur through rate in liters per second
 		float throttle = 0.0f;		// current throttle level (0.0f to 1.0f)
-
-		PID::PID attitude_controler{0.1f, 0.01f, 1.5f};
-		PID::PID position_controler{0.01f, 0.001f, 0.02f};
-		PID::PID throttle_controler{0.5f, 0.001f, 3.5f};
+		float p_th_d = 0.0f;		// previous throttle delta
 
 		// Function specific varialbes (super private)
 		float _inertia_multiplier = -1.0f;
@@ -35,10 +34,10 @@ namespace Rocket {
 		// GNC
 		int traj_points = 0;
 		float traj_timesteps = 1.0f;
-		float traj_states_total;
-		float traj_states[100][2];
-		float traj[100][5];
+		float traj[1024][6];
 		int next_step;
+
+		int temp_counter = 0;
 	};
 	
 	// Getters and setters
@@ -58,6 +57,6 @@ namespace Rocket {
 
 	// Metastats
 	float landing_cost(Rocket &r);
-	void predict(Rocket r, int &depth, int &index, float &best_cost, int &best_cost_idnex);
+	void predict(Rocket &ro, Rocket r, int depth, int &index, float &best_cost, int &best_cost_idnex);
 	void foresee(Rocket &ro, int depth, bool viz = false);
 }

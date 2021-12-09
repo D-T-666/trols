@@ -1,3 +1,5 @@
+#pragma once
+
 namespace PID{
 	struct PID{
 		float kp, ki, kd;
