@@ -43,8 +43,8 @@ float Rocket::inertia(Rocket &r) {
 }
 
 void Rocket::control(Rocket &r, float dt) {
-	float thruster_theta_per_second = 0.5f;
-	float throttle_per_second = 0.5f;
+	float thruster_theta_per_second = 0.25f;
+	float throttle_per_second = 0.25f;
 
 	float th_d = throttle_per_second * dt * (1 - (r.next_step & 2));
 	float gm_d = thruster_theta_per_second * dt * (1 - (r.next_step & 1) * 2);
@@ -54,6 +54,7 @@ void Rocket::control(Rocket &r, float dt) {
 
 	r.thruster_theta = clip(r.thruster_theta + gm_d, -r.thruster_max_theta, r.thruster_max_theta);
 	r.throttle = clip(r.throttle + th_d, 0.0f, 1.0f);
+	// if (r.next_step & 2) r.throttle = 1;
 
 	r.p_th_d = th_d;
 	r.p_gm_d = gm_d;

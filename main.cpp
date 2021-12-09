@@ -23,11 +23,11 @@ int main() {
 	Rocket::set_thruster(my_rocket, 0, -4, 0.0f);
 	my_rocket.burn_through_rate = 0.025f;
 	Rocket::set_pos(my_rocket, -10, 200);
-	// Rocket::set_vel(my_rocket, -50, 0);
-	Rocket::set_GNC(my_rocket, 1024, 0.05);
-	// my_rocket.theta = -0.5f;
+	Rocket::set_vel(my_rocket, -10, 0);
+	Rocket::set_GNC(my_rocket, 9, 0.2);
+	my_rocket.theta = -1.5f;
 	
-	World my_world{2.0f, 90, 560, 310, 10, 580, 580};
+	World my_world{2.0f, 290, 560, 310, 10, 580, 580};
 
 	chart::Line chart_position;
 	chart::set_screen(chart_position, 10, 320, 290, 270);
@@ -93,7 +93,7 @@ int main() {
 			DrawRectangle(0, 0, 300, 90, {22,22,22,255});
 
 
-			// if (frameCount % 10 == 0)
+			// if (frameCount % 20 == 0)
 			// 	drawWorld(my_world, my_rocket, false, false);
 			updateWorld(my_world, my_rocket);
 			drawWorld(my_world, my_rocket);

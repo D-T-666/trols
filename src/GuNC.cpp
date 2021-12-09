@@ -24,56 +24,60 @@ float Rocket::landing_cost(Rocket &r) {
 
 	// float res = fabs(r.pos_y * r.throttle) * 0.007 + fabs(r.pos_x*0.1) + ro - fabs(r.vel_x*0.05) + fabs(r.vel_y*0.1) - fabs((r.pos_y-r.height/2)*0.1);//v;//ro + fabs(v/1000.0f);
 
-	float res = ro * ro * rv * rv;
+	float res = ro * ro + fabs(ro) * 10 * (fabs(ro) > .2)
+				+ rv * rv
+				+ 0.1 * fabs(vy)
+				+ 0.05 * fabs(vx)
+		
+				+ 0.1 * fabs(py - r.height / 2)
+				+ 100 * (py - r.height / 2 < 0)
+				- vx / px * (fabs(px) > 10) + vx / 10 * (fabs(px) < 10)
+				+ 0.3 * fabs(px) * clip(10 / fabs(py), 0.5, 3.0)
+	;
 
 	return res;
 }
 
-void Rocket::predict(Rocket &ro, Rocket r, int depth, int &index, float &best_cost, int &best_cost_idnex) {
-	float c;
-	int i;
+int Rocket::predict(Rocket &ro, int depth) {
+	float cost = 1 << 30;
+	int best_path;
 
-	if (depth > 0) {
-		float child_best_cost = 1 << 30;
-		int child_best_cost_index = 0;
+	for (int l = 0; l < (1 << depth) * (1 << depth); l++) {
+		Rocket r = ro;
+		for (int t = 0; t < depth; t++) {
+			int next_step = (l >> t * 2) & 3;
 
-		for (int i = 0; i < 4; i++) {
-			Rocket tr = r;
-			tr.next_step = i;
-			control(tr, tr.traj_timesteps);
-			update(tr, tr.traj_timesteps);
-			predict(ro, tr, depth - 1, i, child_best_cost, child_best_cost_index);
+			r.next_step = next_step;
+			control(r, r.traj_timesteps);
+			update(r, r.traj_timesteps);
 		}
 
-		c = child_best_cost;
-		i = child_best_cost_index;
-	} else {
-		c = landing_cost(r);
-		i = index;
-
-		if (rand() % 10 == 0) {
-			ro.traj[ro.temp_counter][0] = r.pos_x;
-			ro.traj[ro.temp_counter][1] = r.pos_y;
-			ro.traj[ro.temp_counter][2] = r.theta;
-			ro.traj[ro.temp_counter][3] = r.thruster_theta;
-			ro.traj[ro.temp_counter][4] = r.throttle;
-			ro.traj[ro.temp_counter][5] = clip(c/10, 0.0, 1.0);
-			ro.temp_counter++;
-			ro.temp_counter = ro.temp_counter % 1024;
+		float r_cost = landing_cost(r);
+		if (r_cost < cost) {
+			cost = r_cost;
+			best_path = l;
 		}
 	}
 
-	if (c < best_cost) {
-		best_cost = c;
-		best_cost_idnex = i;
-	}
+	return best_path;
 }
 
 void Rocket::foresee(Rocket &ro, int depth, bool viz) {
-	float best_cost = 1 << 30;
-	int best_cost_index = 0;
-	
-	predict(ro, ro, depth, best_cost_index, best_cost, best_cost_index);
+	ro.next_step = predict(ro, depth);
 
-	ro.next_step = best_cost_index;
+	Rocket r = ro;
+	for (int t = 0; t < depth; t++) {
+		int next_step = (ro.next_step >> t * 2);
+
+		r.next_step = next_step;
+		control(r, r.traj_timesteps);
+		update(r, r.traj_timesteps);
+
+		ro.traj[t][0] = r.pos_x;
+		ro.traj[t][1] = r.pos_y;
+		ro.traj[t][2] = r.theta;
+		ro.traj[t][3] = r.thruster_theta;
+		ro.traj[t][4] = r.throttle;
+		ro.traj[t][5] = clip(landing_cost(r)/10, 0.0, 1.0);
+	}
 }

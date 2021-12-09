@@ -16,7 +16,7 @@ namespace Rocket {
 		float thruster_distance=.0f;// distance from CG to thruster
 		float thruster_theta = 0.0f;// rotation of the thruster relative to the rocket
 		float p_gm_d = 0.0f; 		// previous gimball delta
-		float thruster_max_theta = 80.0 * 3.1415926 / 180.f;
+		float thruster_max_theta = 8.0 * 3.1415926 / 180.f;
 		float dry_mass = 0.0f;
 		float wet_mass = 0.0f;
 		float fuel_mass = 0.0f;
@@ -34,7 +34,7 @@ namespace Rocket {
 		// GNC
 		int traj_points = 0;
 		float traj_timesteps = 1.0f;
-		float traj[1024][6];
+		float traj[20][6];
 		int next_step;
 
 		int temp_counter = 0;
@@ -57,6 +57,6 @@ namespace Rocket {
 
 	// Metastats
 	float landing_cost(Rocket &r);
-	void predict(Rocket &ro, Rocket r, int depth, int &index, float &best_cost, int &best_cost_idnex);
+	int predict(Rocket &ro, int depth);
 	void foresee(Rocket &ro, int depth, bool viz = false);
 }
