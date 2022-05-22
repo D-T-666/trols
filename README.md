@@ -2,7 +2,7 @@
 
 current version:
 
-![](https://cloud.dimitri.ge/trols/anim-0.1.0.gif)
+![](https://cloud.dimitri.ge/trols/anim-0.2.1.gif)
 
 ## TODO:
 
