@@ -2,7 +2,7 @@
 
 current version:
 
-![](https://cloud.dimitri.ge/trols/anim-0.2.1.gif)
+![A screen recording of the program running](small.gif)
 
 ## TODO:
 
